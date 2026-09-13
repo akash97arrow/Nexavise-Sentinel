@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
-from backend.models import SecurityEvent
+from backend.models import SecurityEvent, Alert
 from backend.schemas import SecurityEventCreate, SecurityEventResponse
 from backend.dependencies import get_current_user
 from backend.detection import analyze_event
@@ -35,6 +35,16 @@ def create_event(
         event.event_type,
         event.severity
     )
+
+    if analysis["threat"]:
+        new_alert = Alert(
+            event_id=new_event.id,
+            risk_score=analysis["risk_score"],
+            message=analysis["message"]
+        )
+
+        db.add(new_alert)
+        db.commit()
 
     return {
         "event": {

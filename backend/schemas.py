@@ -41,3 +41,17 @@ class SecurityEventResponse(BaseModel):
     created_at: datetime        
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class AlertResponse(BaseModel):
+    id: int
+    event_id: int
+    risk_score: int
+    message: str
+    status: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class AlertUpdate(BaseModel):
+    status: str

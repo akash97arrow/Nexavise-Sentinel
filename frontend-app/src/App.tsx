@@ -1,122 +1,242 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useEffect, useState } from "react";
+import Login from "./Login";
+import StatCard from "./components/StatCard";
+import AlertCard from "./components/AlertCard";
+import EventCard from "./components/EventCard";
+import EventForm from "./components/EventForm";
+import "./App.css";
+
+type DashboardStats = {
+  total_events: number;
+  total_alerts: number;
+  open_alerts: number;
+  resolved_alerts: number;
+  high_risk_alerts: number;
+};
+
+type Alert = {
+  id: number;
+  event_id: number;
+  risk_score: number;
+  message: string;
+  status: string;
+  created_at: string;
+};
+
+type SecurityEvent = {
+  id: number;
+  event_type: string;
+  source_ip: string;
+  description: string;
+  severity: string;
+  created_at: string;
+};
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [stats, setStats] = useState<DashboardStats>({
+    total_events: 0,
+    total_alerts: 0,
+    open_alerts: 0,
+    resolved_alerts: 0,
+    high_risk_alerts: 0,
+  });
+
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [events, setEvents] = useState<SecurityEvent[]>([]);
+  const [error, setError] = useState("");
+  const [token, setToken] = useState(
+    sessionStorage.getItem("token") || ""
+  );
+
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchData = async () => {
+      try {
+        setError("");
+
+        // 1. Fetch dashboard statistics
+        const statsResponse = await fetch(
+          "http://127.0.0.1:8000/dashboard/stats",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!statsResponse.ok) {
+          throw new Error("Failed to fetch dashboard stats");
+        }
+
+        const statsData = await statsResponse.json();
+        setStats(statsData);
+
+        // 2. Fetch security alerts
+        const alertsResponse = await fetch(
+          "http://127.0.0.1:8000/alerts",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!alertsResponse.ok) {
+          throw new Error("Failed to fetch alerts");
+        }
+
+        const alertsData = await alertsResponse.json();
+        setAlerts(alertsData);
+
+        // 3. Fetch security events
+        const eventsResponse = await fetch(
+          "http://127.0.0.1:8000/events",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!eventsResponse.ok) {
+          throw new Error("Failed to fetch events");
+        }
+
+        const eventsData = await eventsResponse.json();
+        setEvents(eventsData);
+
+      } catch (error) {
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Something went wrong"
+        );
+      }
+    };
+
+    fetchData();
+  }, [token]);
+
+  if (!token) {
+    return (
+      <Login
+        onLogin={(newToken) => {
+          sessionStorage.setItem("token", newToken);
+          setToken(newToken);
+        }}
+      />
+    );
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
+    <div className="dashboard">
+
+      {/* Header */}
+      <div className="header">
         <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
+          <h1>Nexavise Sentinel</h1>
+          <p>Security Monitoring Dashboard</p>
         </div>
+
         <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+          className="logout-button"
+          onClick={() => {
+            sessionStorage.removeItem("token");
+            setToken("");
+          }}
         >
-          Count is {count}
+          Logout
         </button>
-      </section>
+      </div>
 
-      <div className="ticks"></div>
+      {/* Error message */}
+      {error && <p className="error">{error}</p>}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      {/* Statistics */}
+      <div className="stats-grid">
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+        <StatCard
+          title="Total Events"
+          value={stats.total_events}
+        />
+
+        <StatCard
+          title="Total Alerts"
+          value={stats.total_alerts}
+        />
+
+        <StatCard
+          title="Open Alerts"
+          value={stats.open_alerts}
+        />
+
+        <StatCard
+          title="High Risk Alerts"
+          value={stats.high_risk_alerts}
+        />
+
+      </div>
+
+      {/* Create Security Event */}
+      <EventForm
+        token={token}
+        onEventCreated={() => {
+          window.location.reload();
+        }}
+      />
+
+      {/* Alerts */}
+      <div className="alerts-section">
+
+        <h2>Recent Security Alerts</h2>
+
+        {alerts.length === 0 ? (
+          <p>No security alerts found.</p>
+        ) : (
+          alerts.map((alert) => (
+            <AlertCard
+              key={alert.id}
+              id={alert.id}
+              message={alert.message}
+              eventId={alert.event_id}
+              riskScore={alert.risk_score}
+              status={alert.status}
+              createdAt={alert.created_at}
+              token={token}
+              onResolved={() => {
+                window.location.reload();
+              }}
+            />
+          ))
+        )}
+
+      </div>
+
+      {/* Events */}
+      <div className="alerts-section">
+
+        <h2>Security Events</h2>
+
+        {events.length === 0 ? (
+          <p>No security events found.</p>
+        ) : (
+          events.map((event) => (
+            <EventCard
+              key={event.id}
+              eventType={event.event_type}
+              sourceIp={event.source_ip}
+              description={event.description}
+              severity={event.severity}
+              createdAt={event.created_at}
+            />
+          ))
+        )}
+
+      </div>
+
+    </div>
+  );
 }
 
-export default App
+export default App;
