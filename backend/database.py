@@ -1,11 +1,20 @@
+import os
+
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-DATABASE_URL = "postgresql+psycopg://sentinel:sentinel123@localhost:5432/sentinel"
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is not configured")
 
 engine = create_engine(DATABASE_URL)
 
 SessionLocal = sessionmaker(bind=engine)
+
 
 def get_db():
     db = SessionLocal()

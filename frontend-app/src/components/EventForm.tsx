@@ -5,16 +5,24 @@ type EventFormProps = {
   onEventCreated: () => void;
 };
 
-function EventForm({ token, onEventCreated }: EventFormProps) {
+function EventForm({
+  token,
+  onEventCreated,
+}: EventFormProps) {
   const [eventType, setEventType] = useState("");
   const [sourceIp, setSourceIp] = useState("");
   const [description, setDescription] = useState("");
   const [severity, setSeverity] = useState("LOW");
-  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
     event.preventDefault();
-    setMessage("");
+
+    setError("");
+    setLoading(true);
 
     try {
       const response = await fetch(
@@ -28,8 +36,8 @@ function EventForm({ token, onEventCreated }: EventFormProps) {
           body: JSON.stringify({
             event_type: eventType,
             source_ip: sourceIp,
-            description: description,
-            severity: severity,
+            description,
+            severity,
           }),
         }
       );
@@ -38,68 +46,135 @@ function EventForm({ token, onEventCreated }: EventFormProps) {
         throw new Error("Failed to create security event");
       }
 
-      setMessage("Security event created successfully");
-
       setEventType("");
       setSourceIp("");
       setDescription("");
       setSeverity("LOW");
 
       onEventCreated();
-    } catch (error) {
-      setMessage(
-        error instanceof Error
-          ? error.message
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
           : "Something went wrong"
       );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="event-form-section">
-      <h2>Create Security Event</h2>
 
-      <form onSubmit={handleSubmit}>
+      <div className="event-form-header">
+        <div>
+          <h2>Create Security Event</h2>
+          <p>
+            Record a security event for threat analysis
+          </p>
+        </div>
 
-        <input
-          type="text"
-          placeholder="Event Type (e.g. BRUTE_FORCE)"
-          value={eventType}
-          onChange={(e) => setEventType(e.target.value)}
-          required
-        />
+        <div className="event-form-icon">
+          +
+        </div>
+      </div>
 
-        <input
-          type="text"
-          placeholder="Source IP"
-          value={sourceIp}
-          onChange={(e) => setSourceIp(e.target.value)}
-          required
-        />
+      <form
+        className="event-form"
+        onSubmit={handleSubmit}
+      >
 
-        <textarea
-          placeholder="Event Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          required
-        />
+        <div className="form-field">
+          <label htmlFor="event-type">
+            Event Type
+          </label>
 
-        <select
-          value={severity}
-          onChange={(e) => setSeverity(e.target.value)}
+          <input
+            id="event-type"
+            type="text"
+            placeholder="e.g. BRUTE_FORCE"
+            value={eventType}
+            onChange={(e) =>
+              setEventType(e.target.value)
+            }
+            required
+          />
+        </div>
+
+
+        <div className="form-field">
+          <label htmlFor="source-ip">
+            Source IP
+          </label>
+
+          <input
+            id="source-ip"
+            type="text"
+            placeholder="e.g. 192.168.1.50"
+            value={sourceIp}
+            onChange={(e) =>
+              setSourceIp(e.target.value)
+            }
+            required
+          />
+        </div>
+
+
+        <div className="form-field description-field">
+          <label htmlFor="description">
+            Description
+          </label>
+
+          <textarea
+            id="description"
+            placeholder="Describe the security event..."
+            value={description}
+            onChange={(e) =>
+              setDescription(e.target.value)
+            }
+            rows={3}
+            required
+          />
+        </div>
+
+
+        <div className="form-field">
+          <label htmlFor="severity">
+            Severity
+          </label>
+
+          <select
+            id="severity"
+            value={severity}
+            onChange={(e) =>
+              setSeverity(e.target.value)
+            }
+          >
+            <option value="LOW">LOW</option>
+            <option value="MEDIUM">MEDIUM</option>
+            <option value="HIGH">HIGH</option>
+            <option value="CRITICAL">CRITICAL</option>
+          </select>
+        </div>
+
+
+        {error && (
+          <div className="event-form-error">
+            {error}
+          </div>
+        )}
+
+
+        <button
+          className="create-event-button"
+          type="submit"
+          disabled={loading}
         >
-          <option value="LOW">LOW</option>
-          <option value="MEDIUM">MEDIUM</option>
-          <option value="HIGH">HIGH</option>
-        </select>
-
-        <button type="submit">
-          Create Event
+          {loading ? "Creating..." : "Create Security Event"}
         </button>
 
       </form>
 
-      {message && <p>{message}</p>}
     </div>
   );
 }

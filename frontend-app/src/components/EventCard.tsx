@@ -13,26 +13,53 @@ function EventCard({
   severity,
   createdAt,
 }: EventCardProps) {
-
-  const severityClass = severity.toLowerCase();
+  const severityLevel = severity.toUpperCase();
 
   return (
-    <div className="event-card">
-      <div className="event-header">
-        <h3>{eventType}</h3>
+    <div
+      className={`security-event-card ${severityLevel.toLowerCase()}`}
+    >
 
-        <span className={`severity ${severityClass}`}>
-          {severity}
+      {/* Event Header */}
+      <div className="security-event-header">
+
+        <div>
+          <h3>{eventType}</h3>
+
+          <span className="security-event-source">
+            Source IP: {sourceIp}
+          </span>
+        </div>
+
+        <span
+          className={`security-event-badge ${severityLevel.toLowerCase()}`}
+        >
+          {severityLevel}
         </span>
+
       </div>
 
-      <div className="event-details">
-        <span>Source IP: {sourceIp}</span>
+
+      {/* Description */}
+      <div className="security-event-description">
+        {description}
       </div>
 
-      <p>{description}</p>
 
-      <small>Created: {createdAt}</small>
+      {/* Footer */}
+      <div className="security-event-footer">
+
+        <span>
+          Created:{" "}
+          {new Date(createdAt).toLocaleString()}
+        </span>
+
+        <span className="security-event-status">
+          EVENT RECORDED
+        </span>
+
+      </div>
+
     </div>
   );
 }

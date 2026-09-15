@@ -10,33 +10,53 @@ from backend.dependencies import get_current_user
 router = APIRouter()
 
 
-@router.get("/alerts", response_model=list[AlertResponse])
+@router.get(
+    "/alerts",
+    response_model=list[AlertResponse]
+)
 def get_alerts(
     db: Session = Depends(get_db),
-    current_user: int = Depends(get_current_user)
+    current_user: int = Depends(get_current_user),
 ):
-    alerts = db.query(Alert).order_by(
-        Alert.created_at.desc()
-    ).all()
+    alerts = (
+        db.query(Alert)
+        .filter(Alert.user_id == current_user)
+        .order_by(Alert.created_at.desc())
+        .all()
+    )
 
     return alerts
 
 
-@router.patch("/alerts/{alert_id}", response_model=AlertResponse)
+@router.patch(
+    "/alerts/{alert_id}",
+    response_model=AlertResponse
+)
 def update_alert(
     alert_id: int,
     alert: AlertUpdate,
     db: Session = Depends(get_db),
-    current_user: int = Depends(get_current_user)
+    current_user: int = Depends(get_current_user),
 ):
-    existing_alert = db.query(Alert).filter(
-        Alert.id == alert_id
-    ).first()
+    existing_alert = (
+        db.query(Alert)
+        .filter(
+            Alert.id == alert_id,
+            Alert.user_id == current_user,
+        )
+        .first()
+    )
 
     if existing_alert is None:
         raise HTTPException(
             status_code=404,
-            detail="Alert not found"
+            detail="Alert not found",
+        )
+
+    if alert.status not in ("OPEN", "RESOLVED"):
+        raise HTTPException(
+            status_code=400,
+            detail="Status must be OPEN or RESOLVED",
         )
 
     existing_alert.status = alert.status

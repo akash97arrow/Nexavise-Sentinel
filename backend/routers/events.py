@@ -11,20 +11,18 @@ from backend.detection import analyze_event
 router = APIRouter()
 
 
-# POST /events
-# Create a security event
-
 @router.post("/events")
 def create_event(
     event: SecurityEventCreate,
     db: Session = Depends(get_db),
-    current_user: int = Depends(get_current_user)
+    current_user: int = Depends(get_current_user),
 ):
     new_event = SecurityEvent(
+        user_id=current_user,
         event_type=event.event_type,
         source_ip=event.source_ip,
         description=event.description,
-        severity=event.severity
+        severity=event.severity,
     )
 
     db.add(new_event)
@@ -33,14 +31,15 @@ def create_event(
 
     analysis = analyze_event(
         event.event_type,
-        event.severity
+        event.severity,
     )
 
     if analysis["threat"]:
         new_alert = Alert(
+            user_id=current_user,
             event_id=new_event.id,
             risk_score=analysis["risk_score"],
-            message=analysis["message"]
+            message=analysis["message"],
         )
 
         db.add(new_alert)
@@ -53,22 +52,25 @@ def create_event(
             "source_ip": new_event.source_ip,
             "description": new_event.description,
             "severity": new_event.severity,
-            "created_at": new_event.created_at
+            "created_at": new_event.created_at,
         },
-        "analysis": analysis
+        "analysis": analysis,
     }
 
 
-# GET /events
-# View security events
-
-@router.get("/events", response_model=list[SecurityEventResponse])
+@router.get(
+    "/events",
+    response_model=list[SecurityEventResponse],
+)
 def get_events(
     db: Session = Depends(get_db),
-    current_user: int = Depends(get_current_user)
+    current_user: int = Depends(get_current_user),
 ):
-    events = db.query(SecurityEvent).order_by(
-        SecurityEvent.created_at.desc()
-    ).all()
+    events = (
+        db.query(SecurityEvent)
+        .filter(SecurityEvent.user_id == current_user)
+        .order_by(SecurityEvent.created_at.desc())
+        .all()
+    )
 
     return events
